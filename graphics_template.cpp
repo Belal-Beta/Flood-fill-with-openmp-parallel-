@@ -79,75 +79,6 @@ void DrawLine(HDC hdc, POINT st, POINT end, COLORREF color)
         }
     }
 }
-
-void Draw8Points(HDC hdc, int x, int y, POINT shift)
-{
-    SetPixel(hdc, shift.x + x, shift.y + y, RGB(0, 255, 0));
-    SetPixel(hdc, shift.x - x, shift.y + y, RGB(0, 255, 0));
-    SetPixel(hdc, shift.x + x, shift.y - y, RGB(0, 0, 255));
-    SetPixel(hdc, shift.x - x, shift.y - y, RGB(255, 255, 0));
-    SetPixel(hdc, shift.x + y, shift.y + x, RGB(0, 255, 255));
-    SetPixel(hdc, shift.x - y, shift.y + x, RGB(255, 0, 255));
-    SetPixel(hdc, shift.x + y, shift.y - x, RGB(255, 165, 0));
-    SetPixel(hdc, shift.x - y, shift.y - x, RGB(128, 0, 128));                    
-}
-
-void DrawCircle(HDC hdc, POINT c, POINT r)
-{
-    int R = (int)round(sqrt(pow(c.x - r.x, 2) + pow(c.y - r.y, 2)));
-    int x = 0, y = R, d = 1 - R, ch1 = 3, ch2 = 5 - 2 * R;
-    while (x <= y)
-    {
-        Draw8Points(hdc, x, y, c); // Simplified to pass x, y directly
-        if (d <= 0)
-        {
-            d += ch1;
-            ch1 += 2;
-            ch2 += 2;
-        }
-        else
-        {
-            d += ch2;
-            ch1 += 2;
-            ch2 += 4;
-            y--;
-        }
-        x++;
-    }
-}
-
-void DrawTwoCiclesWithFilledAreaBetweenThem(HDC hdc, POINT c, POINT r1, POINT r2, COLORREF color)
-{
-    int R1 = (int)round(sqrt(pow(c.x - r1.x, 2) + pow(c.y - r1.y, 2)));
-    int R2 = (int)round(sqrt(pow(c.x - r2.x, 2) + pow(c.y - r2.y, 2)));
-    
-    if (R1 > R2) swap(R1, R2);
-    
-    for (int r = R1; r <= R2; r++)
-    {
-        POINT rp = { c.x + r, c.y };
-        DrawCircle(hdc, c, rp);
-    }
-}
-
-void hermite(HDC hdc, vector<POINT> points, COLORREF color) 
-{
-    POINT p0 = points[0], p1 = points[2];
-    POINT t0 = { points[1].x - points[0].x, points[1].y - points[0].y };
-    POINT t1 = { points[3].x - points[2].x, points[3].y - points[2].y };
-    for (double t = 0; t <= 1; t += 0.001)
-    {
-        double t2 = t * t, t3 = t2 * t;
-        double h00 = 2 * t3 - 3 * t2 + 1;
-        double h10 = t3 - 2 * t2 + t;
-        double h01 = -2 * t3 + 3 * t2;
-        double h11 = t3 - t2;
-        int x = (int)(h00 * p0.x + h10 * t0.x + h01 * p1.x + h11 * t1.x);
-        int y = (int)(h00 * p0.y + h10 * t0.y + h01 * p1.y + h11 * t1.y);
-        SetPixel(hdc, x, y, color);
-    }
-}
-
 LRESULT WINAPI wndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
 {       
     HDC hdc;
@@ -167,20 +98,6 @@ LRESULT WINAPI wndProc(HWND hwnd, UINT mcode, WPARAM wp, LPARAM lp)
 				DrawLine(hdc, points[i], points[(i + 1) % 5], RGB(255, 0, 0));
 			}
 			NRFloodFill(hdc, points[5].x, points[5].y, RGB(255, 0, 0), RGB(255, 255, 255));
-            ReleaseDC(hwnd, hdc);
-        }
-        return 0;
-    case WM_RBUTTONDOWN:
-        x = LOWORD(lp);
-        y = HIWORD(lp);
-        points.push_back({ x, y });
-        if (points.size() == 3)
-        {
-            hdc = GetDC(hwnd);
-            DrawTwoCiclesWithFilledAreaBetweenThem(hdc, points[0], points[1], points[2], RGB(255, 255, 255));
-            DrawLine(hdc, points[0], points[1], RGB(0, 255, 0));
-            DrawLine(hdc, points[0], points[2], RGB(0, 255, 0));
-            points.clear();
             ReleaseDC(hwnd, hdc);
         }
         return 0;
